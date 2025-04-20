@@ -1,95 +1,198 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <title>Змейка — Esker Studios</title>
-    <style>
-        body {
-            background: #0a0a0a;
-            color: #00ffcc;
-            font-family: 'Exo 2', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        canvas {
-            background: #002b36;
-            border: 2px solid #00ffcc;
-        }
-        a {
-            margin-top: 20px;
-            color: #00ffcc;
-            text-decoration: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Змейка — Esker Studios</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #00ffcc;
+      font-family: 'Exo 2', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      background: #002b36;
+      border: 2px solid #00ffcc;
+    }
+    a {
+      margin-top: 20px;
+      color: #00ffcc;
+      text-decoration: none;
+    }
+  </style>
 </head>
 <body>
-    <h1>Игра Змейка</h1>
-    <canvas id="game" width="400" height="400"></canvas>
-    <a href="../index.html">← Назад на главную</a>
+  <h1>Игра Змейка</h1>
+  <canvas id="game" width="400" height="400"></canvas>
+  <a href="../index.html">← Назад на главную</a>
 
-    <script>
-        const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d');
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
 
-        const grid = 20;
-        let snake = [{x: 160, y: 160}];
-        let dx = grid;
-        let dy = 0;
-        let food = {
-            x: Math.floor(Math.random() * 20) * grid,
-            y: Math.floor(Math.random() * 20) * grid
+    let snake = [{ x: 160, y: 160 }];
+    const segmentSize = 20;
+    const initialLength = 5;
+    let speed = 0.05; // Уменьшаем скорость
+    let direction = 'right';
+    let food = getRandomPos();
+    let obstacles = [
+      { x: 100, y: 100 },
+      { x: 200, y: 200 },
+      { x: 300, y: 100 }
+    ];
+    let growSegments = 0;
+
+    // Функция для генерации случайной позиции для еды
+    function getRandomPos() {
+      let foodPosition;
+      let isOnSnake = true;
+      let isOnObstacle = true;
+
+      // генерируем позицию, пока она не окажется на змее или на препятствии
+      while (isOnSnake || isOnObstacle) {
+        foodPosition = {
+          x: Math.floor(Math.random() * (canvas.width / segmentSize)) * segmentSize,
+          y: Math.floor(Math.random() * (canvas.height / segmentSize)) * segmentSize
         };
 
-        function gameLoop() {
-            requestAnimationFrame(gameLoop);
+        // проверяем, не находит ли еда на змее
+        isOnSnake = snake.some(seg => seg.x === foodPosition.x && seg.y === foodPosition.y);
 
-            if (++count < 4) return;
-            count = 0;
+        // проверяем, не находит ли еда на препятствиях
+        isOnObstacle = obstacles.some(ob => ob.x === foodPosition.x && ob.y === foodPosition.y);
+      }
 
-            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+      return foodPosition;
+    }
 
-            snake.unshift(head);
+    // Функция для перемещения змеи
+    function moveSnake() {
+      const head = { ...snake[0] };
 
-            if (head.x === food.x && head.y === food.y) {
-                food.x = Math.floor(Math.random() * 20) * grid;
-                food.y = Math.floor(Math.random() * 20) * grid;
-            } else {
-                snake.pop();
-            }
+      switch (direction) {
+        case 'right': head.x += segmentSize * speed; break;
+        case 'left':  head.x -= segmentSize * speed; break;
+        case 'up':    head.y -= segmentSize * speed; break;
+        case 'down':  head.y += segmentSize * speed; break;
+      }
 
-            if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400 || snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
-                snake = [{x: 160, y: 160}];
-                dx = grid;
-                dy = 0;
-            }
+      snake.unshift(head); // добавляем новый сегмент головы
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // если змея не должна расти, удаляем хвост
+      if (growSegments > 0) {
+        growSegments--;  // уменьшаем количество сегментов для роста
+      } else {
+        snake.pop(); // удаляем последний сегмент
+      }
+    }
 
-            ctx.fillStyle = '#00ffcc';
-            snake.forEach(part => ctx.fillRect(part.x, part.y, grid-1, grid-1));
+    // Функция для рисования змеи, еды и препятствий
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#ff0055';
-            ctx.fillRect(food.x, food.y, grid-1, grid-1);
+      // змейка
+      ctx.fillStyle = '#00ffcc';
+      snake.forEach((seg, i) => {
+        ctx.beginPath();
+        ctx.roundRect(seg.x, seg.y, segmentSize, segmentSize, 6);
+        ctx.fillStyle = i === 0 ? '#00ffaa' : '#00ffcc'; // голова змеи
+        ctx.fill();
+      });
+
+      // еда
+      ctx.fillStyle = '#ff0055';
+      ctx.beginPath();
+      ctx.arc(food.x + segmentSize / 2, food.y + segmentSize / 2, segmentSize / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // препятствия
+      ctx.fillStyle = '#ffcc00';
+      obstacles.forEach(ob => {
+        ctx.beginPath();
+        ctx.roundRect(ob.x + 1, ob.y + 1, segmentSize - 2, segmentSize - 2, 4);
+        ctx.fill();
+      });
+    }
+
+    // Функция для вычисления расстояния между двумя точками
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    // Функция для проверки на столкновения
+    function checkCollisions() {
+      const head = snake[0];
+
+      // стены
+      if (head.x < 0 || head.x > canvas.width - segmentSize || head.y < 0 || head.y > canvas.height - segmentSize) {
+        reset();
+      }
+
+      // препятствия
+      for (let ob of obstacles) {
+        if (Math.abs(head.x - ob.x) < segmentSize && Math.abs(head.y - ob.y) < segmentSize) {
+          reset();
         }
+      }
 
-        let count = 0;
-        requestAnimationFrame(gameLoop);
+      // еда
+      if (Math.abs(head.x - food.x) < segmentSize && Math.abs(head.y - food.y) < segmentSize) {
+        growSegments += 5;  // Увеличиваем количество сегментов на 5
+        food = getRandomPos();
+      }
+    }
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft' && dx === 0) {
-                dx = -grid; dy = 0;
-            } else if (e.key === 'ArrowUp' && dy === 0) {
-                dx = 0; dy = -grid;
-            } else if (e.key === 'ArrowRight' && dx === 0) {
-                dx = grid; dy = 0;
-            } else if (e.key === 'ArrowDown' && dy === 0) {
-                dx = 0; dy = grid;
-            }
-        });
-    </script>
+    // Функция для сброса игры
+    function reset() {
+      snake = [];
+      for (let i = 0; i < initialLength; i++) {
+        snake.push({ x: 160 - i * segmentSize, y: 160 });
+      }
+      direction = 'right';
+      growSegments = 0;
+    }
+
+    // Основной игровой цикл
+    function loop() {
+      moveSnake();
+      checkCollisions();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // Слушатель для изменения направления движения змеи
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft'  && direction !== 'right') direction = 'left';
+      if (e.key === 'ArrowRight' && direction !== 'left')  direction = 'right';
+      if (e.key === 'ArrowUp'    && direction !== 'down')  direction = 'up';
+      if (e.key === 'ArrowDown'  && direction !== 'up')    direction = 'down';
+    });
+
+    // roundRect polyfill для закругленных углов
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      }
+    }
+
+    // Инициализация игры
+    reset();
+    loop();
+  </script>
 </body>
 </html>
