@@ -24,20 +24,29 @@
       color: #00ffcc;
       text-decoration: none;
     }
+    .score {
+      font-size: 30px; /* Увеличиваем размер шрифта */
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #00ffcc;
+      z-index: 10; /* Чтобы очки были поверх канваса */
+    }
   </style>
 </head>
 <body>
   <h1>Игра Змейка</h1>
   <canvas id="game" width="400" height="400"></canvas>
+  <div class="score">Очки: <span id="score">0</span></div>
   <a href="../index.html">← Назад на главную</a>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
-    const segmentSize = 20; // Размер одного сегмента змейки
-    const initialLength = 5; // Начальная длина змейки
-    const speed = 0.05; // Скорость змейки (можно изменить для более быстрой игры)
+    const segmentSize = 20;
+    const initialLength = 5;
+    const speed = 0.05; // Изменено на 0.05
 
     let snake = [];
     let food;
@@ -48,8 +57,8 @@
     ];
     let direction = 'right';
     let growSegments = 0;
+    let score = 0; // Очки
 
-    // Функция для генерации случайной позиции для еды
     function getRandomPos() {
       let foodPosition;
       let isOnSnake = true;
@@ -68,22 +77,19 @@
       return foodPosition;
     }
 
-    // Функция для рисования змейки, еды и препятствий
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // Очищаем канвас
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Рисуем змейку
       ctx.fillStyle = '#00ffcc';
       snake.forEach((seg, i) => {
-        console.log(`Drawing snake segment at: x = ${seg.x}, y = ${seg.y}`);
         ctx.beginPath();
         ctx.roundRect(seg.x, seg.y, segmentSize, segmentSize, 6);
-        ctx.fillStyle = i === 0 ? '#00ffaa' : '#00ffcc'; // Голова змеи
+        ctx.fillStyle = i === 0 ? '#00ffaa' : '#00ffcc';
         ctx.fill();
       });
 
       // Рисуем еду
-      console.log(`Drawing food at: x = ${food.x}, y = ${food.y}`);
       ctx.fillStyle = '#ff0055';
       ctx.beginPath();
       ctx.arc(food.x + segmentSize / 2, food.y + segmentSize / 2, segmentSize / 2 - 2, 0, Math.PI * 2);
@@ -91,15 +97,16 @@
 
       // Рисуем препятствия
       obstacles.forEach(ob => {
-        console.log(`Drawing obstacle at: x = ${ob.x}, y = ${ob.y}`);
         ctx.fillStyle = '#ffcc00';
         ctx.beginPath();
         ctx.roundRect(ob.x + 1, ob.y + 1, segmentSize - 2, segmentSize - 2, 4);
         ctx.fill();
       });
+
+      // Обновляем счет на странице
+      document.getElementById('score').textContent = score;
     }
 
-    // Функция для перемещения змеи
     function moveSnake() {
       const head = { ...snake[0] };
 
@@ -110,42 +117,38 @@
         case 'down':  head.y += segmentSize * speed; break;
       }
 
-      snake.unshift(head); // Добавляем новый сегмент головы
+      snake.unshift(head);
 
       if (growSegments > 0) {
         growSegments--;
       } else {
-        snake.pop(); // Удаляем последний сегмент
+        snake.pop();
       }
     }
 
-    // Функция для проверки столкновений
     function checkCollisions() {
       const head = snake[0];
 
       // Столкновение со стенами
       if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
-        console.log("Hit the wall!");
         reset();
       }
 
       // Столкновение с препятствиями
       for (let ob of obstacles) {
         if (Math.abs(head.x - ob.x) < segmentSize && Math.abs(head.y - ob.y) < segmentSize) {
-          console.log("Hit an obstacle!");
           reset();
         }
       }
 
       // Столкновение с едой
       if (Math.abs(head.x - food.x) < segmentSize && Math.abs(head.y - food.y) < segmentSize) {
-        console.log("Ate food!");
-        growSegments += 5;  // Увеличиваем количество сегментов на 5
+        growSegments += 5;
         food = getRandomPos();
+        score += 1;  // Увеличиваем очки на 1
       }
     }
 
-    // Функция для сброса игры
     function reset() {
       snake = [];
       for (let i = 0; i < initialLength; i++) {
@@ -153,9 +156,9 @@
       }
       direction = 'right';
       growSegments = 0;
+      score = 0; // Сброс очков при поражении
     }
 
-    // Слушатель для изменения направления
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowLeft'  && direction !== 'right') direction = 'left';
       if (e.key === 'ArrowRight' && direction !== 'left')  direction = 'right';
@@ -163,7 +166,6 @@
       if (e.key === 'ArrowDown'  && direction !== 'up')    direction = 'down';
     });
 
-    // roundRect для рисования прямоугольников с закругленными углами
     if (!CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
         if (w < 2 * r) r = w / 2;
@@ -179,9 +181,8 @@
       }
     }
 
-    // Инициализация игры
     reset();
-    food = getRandomPos();  // Переместил сюда, чтобы переменная food была доступна
+    food = getRandomPos();
 
     function loop() {
       moveSnake();
