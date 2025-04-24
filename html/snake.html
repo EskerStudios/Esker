@@ -11,13 +11,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      justify-content: flex-start; /* Изменяем на flex-start */
+      min-height: 100vh; /* Изменяем height на min-height */
       margin: 0;
     }
     canvas {
       background: #002b36;
       border: 2px solid #00ffcc;
+      flex-grow: 1;      /* Добавляем flex-grow */
     }
     a {
       margin-top: 20px;
@@ -25,12 +26,49 @@
       text-decoration: none;
     }
     .score {
-      font-size: 30px; /* Увеличиваем размер шрифта */
+      font-size: 30px;
       position: absolute;
       top: 10px;
       left: 10px;
       color: #00ffcc;
-      z-index: 10; /* Чтобы очки были поверх канваса */
+      z-index: 10;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+      gap: 5px;
+      margin-top: 20px;
+      justify-content: center;
+      flex-grow: 1;      /* Добавляем flex-grow */
+      align-items: center; /* Добавляем align-items для вертикального центрирования в flex-контейнере */
+    }
+    .button {
+      background-color: #002b36;
+      border: 2px solid #00ffcc;
+      color: #00ffcc;
+      padding: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #up {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    #left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    #down {
+      grid-column: 2;
+      grid-row: 3;
+    }
+    #right {
+      grid-column: 3;
+      grid-row: 2;
     }
   </style>
 </head>
@@ -38,6 +76,12 @@
   <h1>Игра Змейка</h1>
   <canvas id="game" width="400" height="400"></canvas>
   <div class="score">Очки: <span id="score">0</span></div>
+  <div class="controls">
+    <button class="button" id="left">←</button>
+    <button class="button" id="up">↑</button>
+    <button class="button" id="down">↓</button>
+    <button class="button" id="right">→</button>
+  </div>
   <a href="../index.html">← Назад на главную</a>
 
   <script>
@@ -46,7 +90,7 @@
 
     const segmentSize = 20;
     const initialLength = 5;
-    const speed = 0.05; // Изменено на 0.05
+    const speed = 0.05;
 
     let snake = [];
     let food;
@@ -57,7 +101,7 @@
     ];
     let direction = 'right';
     let growSegments = 0;
-    let score = 0; // Очки
+    let score = 0;
 
     function getRandomPos() {
       let foodPosition;
@@ -80,7 +124,6 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Рисуем змейку
       ctx.fillStyle = '#00ffcc';
       snake.forEach((seg, i) => {
         ctx.beginPath();
@@ -89,13 +132,11 @@
         ctx.fill();
       });
 
-      // Рисуем еду
       ctx.fillStyle = '#ff0055';
       ctx.beginPath();
       ctx.arc(food.x + segmentSize / 2, food.y + segmentSize / 2, segmentSize / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Рисуем препятствия
       obstacles.forEach(ob => {
         ctx.fillStyle = '#ffcc00';
         ctx.beginPath();
@@ -103,7 +144,6 @@
         ctx.fill();
       });
 
-      // Обновляем счет на странице
       document.getElementById('score').textContent = score;
     }
 
@@ -129,23 +169,20 @@
     function checkCollisions() {
       const head = snake[0];
 
-      // Столкновение со стенами
       if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
         reset();
       }
 
-      // Столкновение с препятствиями
       for (let ob of obstacles) {
         if (Math.abs(head.x - ob.x) < segmentSize && Math.abs(head.y - ob.y) < segmentSize) {
           reset();
         }
       }
 
-      // Столкновение с едой
       if (Math.abs(head.x - food.x) < segmentSize && Math.abs(head.y - food.y) < segmentSize) {
         growSegments += 5;
         food = getRandomPos();
-        score += 1;  // Увеличиваем очки на 1
+        score += 1;
       }
     }
 
@@ -156,7 +193,7 @@
       }
       direction = 'right';
       growSegments = 0;
-      score = 0; // Сброс очков при поражении
+      score = 0;
     }
 
     document.addEventListener('keydown', e => {
@@ -165,6 +202,13 @@
       if (e.key === 'ArrowUp'    && direction !== 'down')  direction = 'up';
       if (e.key === 'ArrowDown'  && direction !== 'up')    direction = 'down';
     });
+
+    // Mobile controls
+    document.getElementById('left').addEventListener('click', () => { if (direction !== 'right') direction = 'left'; });
+    document.getElementById('right').addEventListener('click', () => { if (direction !== 'left')  direction = 'right'; });
+    document.getElementById('up').addEventListener('click', () => { if (direction !== 'down')  direction = 'up'; });
+    document.getElementById('down').addEventListener('click', () => { if (direction !== 'up')    direction = 'down'; });
+
 
     if (!CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
