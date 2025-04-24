@@ -55,6 +55,11 @@ section {
     border: 2px solid #00ffcc;
 }
 
+  .game-card-link {
+    color: #00ffcc; /* Цвет текста */
+    text-decoration: none; /* Убирает подчеркивание */
+  }
+
 footer {
     background: #002b36;
     padding: 20px;
